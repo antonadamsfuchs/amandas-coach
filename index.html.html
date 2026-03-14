@@ -133,6 +133,31 @@
   .coach-note-item:last-child { border-bottom:none; }
   .coach-note-date { font-size:10px; color:var(--muted); }
 
+  /* Workout tracking */
+  .exercise-card { background:var(--card); border:1px solid var(--border); border-radius:12px; margin-bottom:10px; overflow:hidden; transition:all 0.2s; }
+  .exercise-card.completed { border-color:rgba(102,187,106,0.3); }
+  .exercise-header { padding:14px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+  .exercise-name { font-size:15px; font-weight:500; }
+  .exercise-prescription { font-size:12px; color:var(--muted); margin-top:2px; }
+  .exercise-cue { font-size:12px; color:var(--purple); font-style:italic; margin-top:2px; }
+  .exercise-status { font-size:18px; }
+  .exercise-log { padding:0 16px 16px; }
+  .set-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  .set-label { font-size:12px; color:var(--muted); width:32px; flex-shrink:0; text-align:center; }
+  .set-input { width:70px; padding:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#fff; font-size:14px; font-family:'Outfit',sans-serif; text-align:center; outline:none; }
+  .set-input:focus { border-color:rgba(255,107,157,0.5); }
+  .set-input.filled { border-color:rgba(102,187,106,0.3); background:rgba(102,187,106,0.05); }
+  .set-unit { font-size:11px; color:var(--muted); width:24px; }
+  .set-check { width:28px; height:28px; border-radius:50%; border:2px solid rgba(255,255,255,0.15); background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:all 0.2s; flex-shrink:0; }
+  .set-check.done { border-color:var(--green); background:rgba(102,187,106,0.15); color:var(--green); }
+  .rest-timer { font-size:11px; color:var(--muted); text-align:center; margin-top:4px; }
+  .workout-summary { background:rgba(102,187,106,0.08); border:1px solid rgba(102,187,106,0.15); border-radius:12px; padding:16px; margin-top:16px; }
+  .workout-summary h4 { color:var(--green); font-size:14px; margin-bottom:8px; }
+  .workout-history-entry { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:8px; }
+  .workout-history-date { font-size:11px; color:var(--muted); margin-bottom:4px; }
+  .workout-history-title { font-size:14px; font-weight:500; color:var(--pink); margin-bottom:6px; }
+  .workout-history-exercises { font-size:12px; color:var(--text); line-height:1.5; }
+
   .figure-tip { background:rgba(196,77,255,0.08); border:1px solid rgba(196,77,255,0.15); border-radius:12px; padding:14px 18px; margin-bottom:16px; font-size:13px; color:rgba(255,255,255,0.7); line-height:1.6; }
   .figure-tip strong { color:var(--purple); }
 
@@ -299,6 +324,53 @@ const SPLITS = {
   ]
 };
 
+// ==================== WORKOUT LOG STORAGE ====================
+function loadWorkoutLogs() {
+  try { return JSON.parse(localStorage.getItem("amanda-workout-logs")) || []; }
+  catch(e) { return []; }
+}
+function saveWorkoutLog(log) {
+  const logs = loadWorkoutLogs();
+  logs.push(log);
+  // Keep last 60 workouts
+  const trimmed = logs.slice(-60);
+  localStorage.setItem("amanda-workout-logs", JSON.stringify(trimmed));
+}
+function getLastWorkoutForMuscle(muscleGroup) {
+  const logs = loadWorkoutLogs();
+  // Find most recent workout that targeted similar muscles
+  for (let i = logs.length - 1; i >= 0; i--) {
+    if (logs[i].dayName && logs[i].dayName.toLowerCase().includes(muscleGroup.toLowerCase())) return logs[i];
+    if (logs[i].muscles && logs[i].muscles.toLowerCase().includes(muscleGroup.toLowerCase())) return logs[i];
+  }
+  return null;
+}
+function buildWorkoutHistoryContext(dayName, muscles) {
+  const logs = loadWorkoutLogs();
+  // Find last 3 similar workouts
+  const similar = [];
+  for (let i = logs.length - 1; i >= 0 && similar.length < 3; i--) {
+    const l = logs[i];
+    const matchDay = l.dayName && dayName && l.dayName.toLowerCase() === dayName.toLowerCase();
+    const matchMuscle = l.muscles && muscles && l.muscles.split(",").some(m => muscles.toLowerCase().includes(m.trim().toLowerCase()));
+    if (matchDay || matchMuscle) similar.push(l);
+  }
+  if (similar.length === 0) return "No previous workout data for this muscle group yet.";
+  let ctx = "PREVIOUS WORKOUT DATA (use for progressive overload recommendations):";
+  similar.forEach(w => {
+    ctx += `\n\n[${w.date}] ${w.dayName}:`;
+    if (w.exercises) {
+      w.exercises.forEach(ex => {
+        if (ex.sets && ex.sets.some(s => s.weight || s.reps)) {
+          ctx += `\n  ${ex.name}: `;
+          ctx += ex.sets.filter(s=>s.weight||s.reps).map(s => `${s.weight||'?'}lbs x ${s.reps||'?'}`).join(", ");
+        }
+      });
+    }
+  });
+  return ctx;
+}
+
 let state = {
   tab: "Check-In",
   apiKey: localStorage.getItem("amanda-api-key") || "",
@@ -308,6 +380,11 @@ let state = {
   stats: {weight:"",waist:"",hips:"",shoulders:"",energy:"7",sleep:"7",soreness:"3",notes:""},
   isAnalyzing:false, analysis:null,
   selectedSplit:"Figure Focused", expandedDay:null, generatingWorkout:false, workout:null,
+  // Workout tracking
+  parsedExercises:null, // Array of {name, sets, reps, rest, cue, logged:[{weight,reps,done}]}
+  activeExercise:null, // Index of expanded exercise
+  workoutDayName:"", workoutMuscles:"",
+  showWorkoutHistory:false,
   goal:"build",
   nutritionChat:[], generatingNutrition:false, chatInput:"",
   logs: JSON.parse(localStorage.getItem("amanda-logs3")||"[]"),
@@ -431,18 +508,49 @@ Max 350 words.`;
 }
 
 async function generateWorkout(day) {
-  setState({generatingWorkout:true, workout:null});
+  setState({generatingWorkout:true, workout:null, parsedExercises:null, activeExercise:null, workoutDayName:day.name, workoutMuscles:day.muscles});
   const profileCtx = buildProfileContext();
+  const historyCtx = buildWorkoutHistoryContext(day.name, day.muscles);
   try {
-    const result = await callClaude([{role:"user", content:`Generate a detailed ${day.name} workout targeting ${day.muscles}.
+    const result = await callClaude([{role:"user", content:`Generate a workout for: ${day.name} targeting ${day.muscles}.
 ${profileCtx}
 
-6-8 exercises with sets x reps, rest periods, and form cues. Include warm-up.
-For Figure: emphasize mind-muscle connection, tempo where it matters.
-If coach notes mention any weak points or preferences, incorporate those.
-End with a posing practice suggestion for today's muscles.
-Reference her by name and make it feel personal.`}], FIGURE_SYSTEM);
-    setState({workout:result, generatingWorkout:false});
+${historyCtx}
+
+IMPORTANT: Return ONLY a JSON array. No other text, no markdown, no backticks. Each element:
+{"name":"Exercise Name","sets":4,"reps":"10-12","rest":"60-90s","cue":"Brief form cue","tempo":"optional tempo like 3-1-2"}
+
+Rules:
+- 6-8 exercises total
+- First exercise should be a 5-min warm-up suggestion (sets:1, reps:"5 min")
+- Last exercise can be a posing practice suggestion
+- For Figure: emphasize mind-muscle connection
+- If previous workout data exists, suggest progressive overload (more weight or reps than last time)
+- If coach notes mention weak points, prioritize those
+- Reference her by name in form cues when helpful
+
+Return ONLY the JSON array.`}], FIGURE_SYSTEM);
+    
+    if(result) {
+      try {
+        const cleaned = result.replace(/```json|```/g,"").trim();
+        const exercises = JSON.parse(cleaned);
+        if(Array.isArray(exercises)) {
+          // Add logging structure to each exercise
+          const parsed = exercises.map(ex => ({
+            ...ex,
+            sets: parseInt(ex.sets) || 3,
+            logged: Array.from({length: parseInt(ex.sets) || 3}, () => ({weight:"", reps:"", done:false}))
+          }));
+          setState({parsedExercises:parsed, generatingWorkout:false, workout:"parsed"});
+          return;
+        }
+      } catch(parseErr) {
+        // If JSON parse fails, fall back to displaying as text
+        console.log("Parse failed, showing as text", parseErr);
+      }
+      setState({workout:result, generatingWorkout:false});
+    } else setState({generatingWorkout:false});
   } catch(err) { setState({workout:"Couldn't connect — try again.", generatingWorkout:false}); }
 }
 
@@ -469,6 +577,51 @@ async function sendNutritionChat(msg) {
     state.nutritionChat.push({role:"assistant",content:"Couldn't connect — try again."});
     setState({generatingNutrition:false});
   }
+}
+
+// ==================== WORKOUT TRACKING ====================
+function updateSetLog(exIdx, setIdx, field, value) {
+  if(state.parsedExercises) {
+    state.parsedExercises[exIdx].logged[setIdx][field] = value;
+    render();
+  }
+}
+function toggleSetDone(exIdx, setIdx) {
+  if(state.parsedExercises) {
+    state.parsedExercises[exIdx].logged[setIdx].done = !state.parsedExercises[exIdx].logged[setIdx].done;
+    render();
+  }
+}
+function getWorkoutCompletion() {
+  if(!state.parsedExercises) return {done:0,total:0,pct:0};
+  let done=0, total=0;
+  state.parsedExercises.forEach(ex => {
+    ex.logged.forEach(s => { total++; if(s.done) done++; });
+  });
+  return {done,total,pct:total?Math.round(done/total*100):0};
+}
+function saveCurrentWorkout() {
+  if(!state.parsedExercises) return;
+  const log = {
+    date: new Date().toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}),
+    dayName: state.workoutDayName,
+    muscles: state.workoutMuscles,
+    split: state.selectedSplit,
+    exercises: state.parsedExercises.map(ex => ({
+      name: ex.name,
+      prescription: `${ex.sets}x${ex.reps}`,
+      sets: ex.logged.filter(s=>s.done).map(s => ({weight:s.weight, reps:s.reps}))
+    }))
+  };
+  saveWorkoutLog(log);
+  // Generate coach notes from workout
+  const summary = log.exercises.map(e => {
+    const setStr = e.sets.map(s=>`${s.weight||'BW'}x${s.reps||'?'}`).join(", ");
+    return `${e.name}: ${setStr||'skipped'}`;
+  }).join("; ");
+  generateCoachNotes(`Workout completed: ${log.dayName}. ${summary}`, `Training session: ${log.dayName} - ${log.muscles}`);
+  alert("Workout saved! 💪");
+  setState({parsedExercises:null, workout:null, activeExercise:null, expandedDay:null});
 }
 
 function saveApiKey() {
@@ -561,8 +714,98 @@ function renderCheckIn() {
 }
 
 function renderTraining() {
-  let h=`<div class="figure-tip"><strong>💡 Figure Focus:</strong> Delts (all 3 heads), back width, and glute/ham tie-ins win Figure shows.</div>`;
-  h+=`<div class="pills">${Object.keys(SPLITS).map(n=>`<div class="pill ${state.selectedSplit===n?'active':''}" onclick="setState({selectedSplit:'${n}',expandedDay:null,workout:null})">${n}</div>`).join("")}</div>`;
+  let h="";
+
+  // If we have a parsed workout in progress, show the tracking UI
+  if(state.parsedExercises) {
+    const comp = getWorkoutCompletion();
+    h+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div><h3 style="font-family:'Playfair Display',serif;font-size:20px;color:var(--pink);margin:0">${state.workoutDayName}</h3>
+      <span style="font-size:12px;color:var(--muted)">${state.workoutMuscles}</span></div>
+      <div style="text-align:right"><span style="font-size:24px;font-weight:700;color:${comp.pct===100?'var(--green)':'var(--pink)'}">${comp.pct}%</span>
+      <div style="font-size:11px;color:var(--muted)">${comp.done}/${comp.total} sets</div></div>
+    </div>`;
+    
+    // Progress bar
+    h+=`<div style="width:100%;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-bottom:20px;overflow:hidden">
+      <div style="width:${comp.pct}%;height:100%;background:linear-gradient(90deg,var(--pink),var(--green));border-radius:2px;transition:width 0.3s"></div></div>`;
+
+    // Exercise cards
+    state.parsedExercises.forEach((ex, ei) => {
+      const isActive = state.activeExercise === ei;
+      const setsCompleted = ex.logged.filter(s=>s.done).length;
+      const allDone = setsCompleted === ex.logged.length;
+      
+      h+=`<div class="exercise-card ${allDone?'completed':''}">
+        <div class="exercise-header" onclick="setState({activeExercise:${isActive?'null':ei}})">
+          <div>
+            <div class="exercise-name">${allDone?'✅ ':''}<span style="${allDone?'opacity:0.6':''}">${escapeHtml(ex.name)}</span></div>
+            <div class="exercise-prescription">${ex.sets} × ${escapeHtml(ex.reps)} ${ex.rest?' · Rest: '+escapeHtml(ex.rest):''}</div>
+            ${ex.cue?`<div class="exercise-cue">${escapeHtml(ex.cue)}</div>`:''}
+            ${ex.tempo?`<div style="font-size:11px;color:var(--blue);margin-top:1px">Tempo: ${escapeHtml(ex.tempo)}</div>`:''}
+          </div>
+          <div class="exercise-status">${allDone?'':'<span style="font-size:12px;color:var(--muted)">'+setsCompleted+'/'+ex.logged.length+'</span>'}</div>
+        </div>`;
+      
+      if(isActive) {
+        h+=`<div class="exercise-log">`;
+        // Set headers
+        h+=`<div class="set-row" style="margin-bottom:4px">
+          <div class="set-label" style="font-weight:600;font-size:10px">SET</div>
+          <div style="width:70px;text-align:center;font-size:10px;color:var(--label)">LBS</div>
+          <div class="set-unit"></div>
+          <div style="width:70px;text-align:center;font-size:10px;color:var(--label)">REPS</div>
+          <div class="set-unit"></div>
+          <div style="width:28px"></div>
+        </div>`;
+        
+        ex.logged.forEach((set, si) => {
+          // Check for previous workout data to show as placeholder
+          const lastWorkout = getLastWorkoutForMuscle(state.workoutMuscles);
+          let prevWeight="", prevReps="";
+          if(lastWorkout && lastWorkout.exercises) {
+            const matchEx = lastWorkout.exercises.find(e=>e.name.toLowerCase()===ex.name.toLowerCase());
+            if(matchEx && matchEx.sets && matchEx.sets[si]) {
+              prevWeight = matchEx.sets[si].weight || "";
+              prevReps = matchEx.sets[si].reps || "";
+            }
+          }
+          
+          h+=`<div class="set-row">
+            <div class="set-label">${si+1}</div>
+            <input class="set-input ${set.weight?'filled':''}" type="number" inputmode="decimal" placeholder="${prevWeight||'lbs'}" 
+              value="${set.weight}" onchange="updateSetLog(${ei},${si},'weight',this.value)">
+            <div class="set-unit">lb</div>
+            <input class="set-input ${set.reps?'filled':''}" type="number" inputmode="numeric" placeholder="${prevReps||ex.reps.toString().split('-')[0]}" 
+              value="${set.reps}" onchange="updateSetLog(${ei},${si},'reps',this.value)">
+            <div class="set-unit">×</div>
+            <div class="set-check ${set.done?'done':''}" onclick="toggleSetDone(${ei},${si})">${set.done?'✓':''}</div>
+          </div>`;
+        });
+        if(ex.rest) h+=`<div class="rest-timer">Rest ${escapeHtml(ex.rest)} before next set</div>`;
+        h+=`</div>`;
+      }
+      h+=`</div>`;
+    });
+
+    // Save / Discard buttons
+    h+=`<div style="display:flex;gap:8px;margin-top:20px">
+      <button class="btn-primary" onclick="saveCurrentWorkout()" style="flex:2">💾 Save Workout</button>
+      <button class="btn-ghost" onclick="if(confirm('Discard this workout?'))setState({parsedExercises:null,workout:null,activeExercise:null})" style="flex:1">Discard</button>
+    </div>`;
+
+    return h;
+  }
+
+  // Normal training view (no active workout)
+  h+=`<div class="figure-tip"><strong>💡 Figure Focus:</strong> Delts (all 3 heads), back width, and glute/ham tie-ins win Figure shows.</div>`;
+  
+  // Toggle workout history
+  h+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div class="pills" style="margin-bottom:0">${Object.keys(SPLITS).map(n=>`<div class="pill ${state.selectedSplit===n?'active':''}" onclick="setState({selectedSplit:'${n}',expandedDay:null,workout:null})">${n}</div>`).join("")}</div>
+  </div>`;
+
+  // Day rows
   SPLITS[state.selectedSplit].forEach((day,i)=>{
     const exp=state.expandedDay===i, rest=day.name.includes("Rest");
     h+=`<div class="day-row ${exp?'expanded':''}" onclick="setState({expandedDay:${exp?'null':i},workout:null})">
@@ -570,11 +813,38 @@ function renderTraining() {
       <span class="day-muscles">${day.muscles}</span></div>`;
     if(exp&&!rest){
       h+=`<div class="day-detail">`;
-      if(!state.workout) h+=`<button class="btn-secondary" onclick="event.stopPropagation();generateWorkout(SPLITS['${state.selectedSplit}'][${i}])" ${state.generatingWorkout?'disabled':''}>${state.generatingWorkout?'✨ Generating...':'⚡ Generate Workout'}</button>`;
-      else h+=`<div class="result-text">${escapeHtml(state.workout)}</div>`;
+      if(!state.workout) h+=`<button class="btn-secondary" onclick="event.stopPropagation();generateWorkout(SPLITS['${state.selectedSplit}'][${i}])" ${state.generatingWorkout?'disabled':''}>${state.generatingWorkout?'✨ Generating your workout...':'⚡ Generate & Track Workout'}</button>`;
+      else if(state.workout!=="parsed") h+=`<div class="result-text">${escapeHtml(state.workout)}</div>`;
       h+=`</div>`;
     }
   });
+
+  // Recent workout history
+  const wlogs = loadWorkoutLogs();
+  if(wlogs.length > 0) {
+    h+=`<div style="margin-top:24px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;cursor:pointer" onclick="setState({showWorkoutHistory:!state.showWorkoutHistory})">
+      <h3 style="font-family:'Playfair Display',serif;font-size:18px;color:var(--pink);margin:0">📋 Workout History</h3>
+      <span style="color:var(--muted);font-size:12px">${state.showWorkoutHistory?'Hide':'Show'} (${wlogs.length})</span>
+    </div>`;
+    if(state.showWorkoutHistory) {
+      [...wlogs].reverse().slice(0,10).forEach(w => {
+        h+=`<div class="workout-history-entry">
+          <div class="workout-history-date">${w.date} · ${escapeHtml(w.split||'')}</div>
+          <div class="workout-history-title">${escapeHtml(w.dayName)}</div>
+          <div class="workout-history-exercises">`;
+        if(w.exercises) {
+          w.exercises.forEach(ex => {
+            const sets = ex.sets && ex.sets.length > 0 ? ex.sets.map(s=>`${s.weight||'BW'}×${s.reps||'?'}`).join(", ") : "—";
+            h+=`${escapeHtml(ex.name)}: ${sets}<br>`;
+          });
+        }
+        h+=`</div></div>`;
+      });
+      h+=`<button class="btn-ghost" style="margin-top:8px" onclick="if(confirm('Clear all workout history?')){localStorage.removeItem('amanda-workout-logs');render()}">🗑️ Clear History</button>`;
+    }
+    h+=`</div>`;
+  }
+
   return h;
 }
 
