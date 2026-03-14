@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Body Coach">
+<meta name="theme-color" content="#0a0a0f">
+<title>Amanda's Body Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --pink: #ff6b9d; --purple: #c44dff; --blue: #4daaff;
+    --bg: #0a0a0f; --card: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.06);
+    --text: rgba(255,255,255,0.85); --muted: rgba(255,255,255,0.4); --label: rgba(255,255,255,0.5);
+    --green: #66bb6a; --red: #ef5350;
+  }
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: linear-gradient(145deg, #0a0a0f 0%, #1a0a1f 40%, #0f0a1a 100%);
+    color: #fff; min-height: 100vh; min-height: 100dvh;
+    overflow-x: hidden; -webkit-font-smoothing: antialiased;
+  }
+  .orb { position: fixed; border-radius: 50%; filter: blur(40px); pointer-events: none; z-index: 0; }
+  .orb-1 { top: -60px; right: -40px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(255,107,157,0.25), transparent 70%); animation: float 6s ease-in-out infinite; }
+  .orb-2 { bottom: -80px; left: -60px; width: 250px; height: 250px; background: radial-gradient(circle, rgba(196,77,255,0.18), transparent 70%); animation: float 8s ease-in-out infinite 2s; }
+  .orb-3 { top: 40%; left: 60%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(77,170,255,0.12), transparent 70%); animation: float 10s ease-in-out infinite 4s; }
+  @keyframes float { 0%,100%{transform:translateY(0) translateX(0)} 33%{transform:translateY(-20px) translateX(10px)} 66%{transform:translateY(10px) translateX(-15px)} }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes pulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+
+  .app { position:relative; z-index:1; max-width:520px; margin:0 auto; padding:20px 16px 120px; animation:fadeIn 0.6s ease-out; }
+
+  .header { text-align:center; margin-bottom:32px; }
+  .header-label { font-size:13px; color:rgba(255,107,157,0.7); text-transform:uppercase; letter-spacing:3px; font-weight:300; margin-bottom:8px; }
+  .header h1 { font-family:'Playfair Display',serif; font-size:36px; font-weight:700; line-height:1.1; background:linear-gradient(135deg,var(--pink),var(--purple),var(--blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .header-sub { font-size:13px; color:rgba(255,255,255,0.35); margin-top:4px; font-weight:300; }
+  .header-division { font-size:11px; color:var(--purple); text-transform:uppercase; letter-spacing:2px; margin-top:6px; font-weight:500; }
+
+  .tabs { display:flex; gap:3px; margin-bottom:24px; background:var(--card); border-radius:12px; padding:4px; border:1px solid var(--border); }
+  .tab { flex:1; padding:10px 4px; background:transparent; border:none; border-radius:8px; color:var(--muted); font-size:11px; font-family:'Outfit',sans-serif; font-weight:400; cursor:pointer; transition:all 0.2s; }
+  .tab.active { background:rgba(255,107,157,0.12); color:var(--pink); font-weight:600; }
+
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:16px; }
+  .result-card { background:rgba(255,107,157,0.05); border:1px solid rgba(255,107,157,0.15); border-radius:16px; padding:20px; margin-top:20px; }
+  .result-card h3 { font-family:'Playfair Display',serif; font-size:20px; color:var(--pink); margin-bottom:16px; }
+  .result-text { font-size:14px; line-height:1.7; color:var(--text); white-space:pre-wrap; word-wrap:break-word; }
+
+  .upload-area { border:2px dashed rgba(255,107,157,0.3); border-radius:16px; padding:32px; text-align:center; cursor:pointer; transition:all 0.3s; margin-bottom:16px; }
+  .upload-area:hover,.upload-area:active { border-color:rgba(255,107,157,0.6); }
+  .upload-area img { max-height:300px; border-radius:12px; width:100%; object-fit:contain; }
+  .upload-icon { font-size:48px; margin-bottom:8px; }
+  .upload-label { color:var(--pink); font-size:16px; }
+  .upload-hint { color:var(--muted); font-size:13px; margin-top:8px; }
+
+  .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:16px; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  .field-label { display:block; font-size:11px; color:var(--label); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+  input[type="number"],input[type="text"],textarea {
+    width:100%; padding:10px 12px; background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1); border-radius:8px;
+    color:#fff; font-size:16px; font-family:'Outfit',sans-serif; outline:none; transition:border-color 0.2s;
+  }
+  input:focus,textarea:focus { border-color:rgba(255,107,157,0.5); }
+  textarea { resize:vertical; font-size:14px; }
+  input[type="range"] { width:100%; height:4px; -webkit-appearance:none; appearance:none; background:rgba(255,255,255,0.1); border-radius:2px; outline:none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--pink); cursor:pointer; }
+  .slider-value { text-align:center; color:var(--pink); font-size:18px; font-weight:600; margin-top:4px; }
+
+  .btn-primary { width:100%; padding:14px 24px; border:none; border-radius:12px; color:#fff; font-size:16px; font-family:'Outfit',sans-serif; font-weight:600; cursor:pointer; letter-spacing:0.5px; background:linear-gradient(135deg,var(--pink),var(--purple)); transition:all 0.3s; }
+  .btn-primary:disabled { background:rgba(255,107,157,0.3); cursor:wait; }
+  .btn-secondary { padding:10px 20px; border:none; border-radius:8px; color:#fff; font-size:14px; font-family:'Outfit',sans-serif; font-weight:500; cursor:pointer; background:linear-gradient(135deg,var(--purple),var(--pink)); }
+  .btn-secondary:disabled { background:rgba(196,77,255,0.3); cursor:wait; }
+  .btn-ghost { background:none; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 16px; color:var(--muted); font-size:12px; cursor:pointer; font-family:'Outfit',sans-serif; transition:all 0.2s; }
+  .btn-ghost:hover { border-color:rgba(255,107,157,0.3); color:var(--pink); }
+
+  .pills { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .pill { padding:8px 16px; border-radius:20px; font-size:13px; font-family:'Outfit',sans-serif; cursor:pointer; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:var(--muted); transition:all 0.2s; }
+  .pill.active { background:rgba(255,107,157,0.2); border-color:rgba(255,107,157,0.4); color:var(--pink); font-weight:600; }
+
+  .day-row { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-radius:12px; cursor:pointer; background:var(--card); border:1px solid var(--border); margin-bottom:8px; transition:all 0.2s; }
+  .day-row.expanded { border-radius:12px 12px 0 0; background:rgba(255,107,157,0.08); border-color:rgba(255,107,157,0.2); }
+  .day-num { color:rgba(255,255,255,0.3); font-size:11px; text-transform:uppercase; letter-spacing:1px; margin-right:10px; }
+  .day-name { font-size:15px; font-weight:500; }
+  .day-name.rest { color:var(--muted); }
+  .day-muscles { color:var(--muted); font-size:11px; text-align:right; max-width:45%; }
+  .day-detail { padding:18px; background:rgba(255,107,157,0.04); border:1px solid rgba(255,107,157,0.15); border-top:none; border-radius:0 0 12px 12px; margin-bottom:8px; }
+
+  .goal-grid { display:flex; gap:8px; margin-bottom:20px; }
+  .goal-btn { flex:1; padding:12px 8px; border-radius:12px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; background:var(--card); border:1px solid var(--border); transition:all 0.2s; }
+  .goal-btn.active { background:rgba(255,107,157,0.15); border-color:rgba(255,107,157,0.3); }
+  .goal-emoji { font-size:20px; }
+  .goal-label { font-size:13px; font-weight:500; }
+  .goal-btn.active .goal-label { color:var(--pink); }
+  .goal-btn:not(.active) .goal-label { color:var(--muted); }
+
+  .chat-container { display:flex; flex-direction:column; gap:12px; margin-top:16px; }
+  .chat-msg { padding:14px 18px; border-radius:16px; font-size:14px; line-height:1.7; max-width:92%; word-wrap:break-word; }
+  .chat-msg.assistant { background:rgba(255,107,157,0.08); border:1px solid rgba(255,107,157,0.12); align-self:flex-start; color:var(--text); white-space:pre-wrap; }
+  .chat-msg.user { background:rgba(77,170,255,0.12); border:1px solid rgba(77,170,255,0.15); align-self:flex-end; color:var(--text); }
+  .chat-input-row { display:flex; gap:8px; margin-top:8px; }
+  .chat-input-row input { flex:1; }
+  .chat-input-row button { flex-shrink:0; padding:10px 16px; }
+  .quick-edits { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .quick-edit { padding:6px 12px; border-radius:16px; font-size:12px; font-family:'Outfit',sans-serif; cursor:pointer; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03); color:var(--muted); transition:all 0.2s; }
+  .quick-edit:hover { border-color:rgba(255,107,157,0.3); color:var(--pink); }
+
+  .trend-badge { display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:10px; font-size:10px; font-weight:600; margin-left:4px; }
+  .trend-down { background:rgba(76,175,80,0.15); color:var(--green); }
+  .trend-up { background:rgba(239,83,80,0.15); color:var(--red); }
+  .trend-same { background:rgba(255,255,255,0.08); color:var(--muted); }
+
+  .progress-entry { display:flex; gap:14px; align-items:flex-start; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:10px; }
+  .progress-photo-img { width:64px; height:64px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+  .progress-photo-placeholder { width:64px; height:64px; border-radius:8px; background:rgba(255,107,157,0.1); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+  .progress-date { font-size:12px; color:var(--muted); margin-bottom:5px; }
+  .progress-stats { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:5px; }
+  .progress-stat { font-size:13px; }
+  .progress-moods { display:flex; gap:10px; }
+  .progress-mood { font-size:11px; color:var(--muted); }
+
+  /* Profile section */
+  .profile-section { margin-bottom:16px; }
+  .profile-section h3 { font-family:'Playfair Display',serif; font-size:18px; color:var(--pink); margin-bottom:12px; }
+  .profile-field { margin-bottom:12px; }
+  .profile-field textarea { min-height:60px; }
+  .coach-notes { background:rgba(196,77,255,0.06); border:1px solid rgba(196,77,255,0.12); border-radius:12px; padding:16px; margin-top:16px; }
+  .coach-notes h4 { font-size:14px; color:var(--purple); margin-bottom:8px; font-weight:600; }
+  .coach-note-item { font-size:13px; color:var(--text); line-height:1.6; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .coach-note-item:last-child { border-bottom:none; }
+  .coach-note-date { font-size:10px; color:var(--muted); }
+
+  .figure-tip { background:rgba(196,77,255,0.08); border:1px solid rgba(196,77,255,0.15); border-radius:12px; padding:14px 18px; margin-bottom:16px; font-size:13px; color:rgba(255,255,255,0.7); line-height:1.6; }
+  .figure-tip strong { color:var(--purple); }
+
+  .empty-state { text-align:center; padding:40px 20px; }
+  .empty-icon { font-size:48px; margin-bottom:12px; }
+  .empty-text { color:var(--muted); font-size:15px; }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .modal { background:#1a1a2e; border:1px solid rgba(255,107,157,0.2); border-radius:20px; padding:28px; max-width:420px; width:100%; max-height:90vh; overflow-y:auto; }
+  .modal h2 { font-family:'Playfair Display',serif; font-size:22px; color:var(--pink); margin-bottom:12px; }
+  .modal p { font-size:14px; color:var(--text); line-height:1.6; margin-bottom:16px; }
+  .modal input[type="password"] { width:100%; padding:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; font-size:14px; font-family:'Outfit',sans-serif; outline:none; margin-bottom:16px; }
+  .modal input[type="password"]:focus { border-color:rgba(255,107,157,0.5); }
+
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:rgba(255,107,157,0.3); border-radius:4px; }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+<div class="app" id="app"></div>
+
+<script>
+// ==================== COACH MEMORY SYSTEM ====================
+const DEFAULT_PROFILE = {
+  name: "Amanda",
+  age: "39",
+  height: "",
+  division: "Figure",
+  workSchedule: "12-hour nursing shifts, rotating days/nights",
+  injuries: "",
+  foodLikes: "",
+  foodDislikes: "",
+  whyCompete: "",
+  weakPoints: "",
+  strongPoints: "",
+};
+
+function loadProfile() {
+  try { return JSON.parse(localStorage.getItem("amanda-profile")) || {...DEFAULT_PROFILE}; }
+  catch(e) { return {...DEFAULT_PROFILE}; }
+}
+function saveProfile(p) { localStorage.setItem("amanda-profile", JSON.stringify(p)); }
+
+function loadCoachNotes() {
+  try { return JSON.parse(localStorage.getItem("amanda-coach-notes")) || []; }
+  catch(e) { return []; }
+}
+function saveCoachNotes(n) {
+  // Keep last 30 notes max
+  const trimmed = n.slice(-30);
+  localStorage.setItem("amanda-coach-notes", JSON.stringify(trimmed));
+  return trimmed;
+}
+
+function buildProfileContext() {
+  const p = loadProfile();
+  const notes = loadCoachNotes();
+  let ctx = `\n\nAMANDA'S PROFILE (she filled this out):
+- Name: ${p.name} | Age: ${p.age} | Height: ${p.height || "not provided"}
+- Division: ${p.division}
+- Work schedule: ${p.workSchedule || "nursing shifts"}
+- Injuries/limitations: ${p.injuries || "none reported"}
+- Foods she likes: ${p.foodLikes || "not specified yet"}
+- Foods she dislikes/allergies: ${p.foodDislikes || "not specified yet"}
+- Why she's competing: ${p.whyCompete || "not shared yet"}
+- Self-assessed weak points: ${p.weakPoints || "not identified yet"}
+- Self-assessed strong points: ${p.strongPoints || "not identified yet"}`;
+
+  if (notes.length > 0) {
+    ctx += `\n\nCOACH'S ACCUMULATED NOTES (things you've learned about Amanda over time — USE these to personalize coaching):`;
+    notes.slice(-15).forEach(n => { ctx += `\n- [${n.date}] ${n.note}`; });
+  }
+  return ctx;
+}
+
+async function generateCoachNotes(coachResponse, context) {
+  // After each coaching interaction, extract learnings
+  try {
+    const result = await callClaude([{role:"user", content:`Based on this coaching interaction, extract 1-3 brief notes about Amanda that would be useful to remember for future sessions. Focus on: preferences, patterns, problem areas, what's working, what's not, emotional state, lifestyle factors.
+
+Context: ${context}
+
+Coach's response: ${coachResponse}
+
+Return ONLY a JSON array of strings, no other text. Example: ["Responds well to higher carb days","Left glute activation still a challenge","Prefers morning training before kids wake up"]
+If there's nothing notable to remember, return: []`}], null);
+    if (result) {
+      const cleaned = result.replace(/```json|```/g,"").trim();
+      const parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const notes = loadCoachNotes();
+        const date = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"});
+        parsed.forEach(n => { if (typeof n === "string" && n.length > 5) notes.push({date, note:n}); });
+        saveCoachNotes(notes);
+      }
+    }
+  } catch(e) { /* silently fail — note generation is a bonus, not critical */ }
+}
+
+// ==================== FIGURE SYSTEM PROMPT ====================
+const FIGURE_SYSTEM = `You are Amanda's personal bodybuilding coach, specializing in NPC/IFBB Figure division competition prep.
+
+About Amanda:
+- 39-year-old registered nurse (shift work)
+- Tall, athletic build — volleyball player frame
+- Balanced proportions, not overly bottom-heavy, not huge shoulders yet
+- Training for Figure division (NOT Bikini, NOT Physique, NOT Wellness)
+- Has general fitness background but new to bodybuilding
+- Busy mom with two kids, limited time
+
+Figure Division Judging Criteria you coach to:
+- Muscular development with shape and symmetry — more muscle than Bikini, less than Physique
+- V-taper: wider shoulders tapering to a small waist is crucial
+- Capped, rounded deltoids are THE signature Figure look
+- Well-developed back (lats, rear delts) for the back pose
+- Glutes developed and round but not oversized for Figure
+- Quads should show sweep and separation, hamstrings tie into glutes
+- Calves proportional to upper legs
+- Conditioning: lean enough for muscle separation but not shredded/striated
+- Quarter turns — symmetry matters enormously
+- Presentation, suit, tan, hair all matter
+
+For her tall frame:
+- Needs MORE muscle than shorter competitors to fill the frame
+- Long limbs mean extra arm and shoulder work to avoid looking lanky
+- Height is an advantage — judges love commanding stage presence
+- Width (delts, lats) is key to balancing height
+
+Always be warm, encouraging, specific, honest, and use her name. Respect her time constraints as a nurse and mom. Reference her profile and coach notes when relevant — she should feel like you truly know her.`;
+
+// ==================== STATE ====================
+const SPLITS = {
+  "Push/Pull/Legs": [
+    {name:"Push",muscles:"Chest, Shoulders (heavy), Triceps"},
+    {name:"Pull",muscles:"Back width (lats), Biceps, Rear Delts"},
+    {name:"Legs (Quad)",muscles:"Quads, Calves, Core"},
+    {name:"Push 2",muscles:"Shoulders (focus), Chest, Triceps"},
+    {name:"Pull 2",muscles:"Back thickness, Biceps, Rear Delts"},
+    {name:"Legs (Glute/Ham)",muscles:"Glutes, Hamstrings, Calves"},
+    {name:"Rest",muscles:"Active recovery, posing practice"},
+  ],
+  "Upper/Lower": [
+    {name:"Upper A (Push)",muscles:"Shoulders, Chest, Triceps"},
+    {name:"Lower A (Quad)",muscles:"Quads, Calves, Core"},
+    {name:"Rest + Posing",muscles:"Quarter turn practice"},
+    {name:"Upper B (Pull)",muscles:"Back, Rear Delts, Biceps"},
+    {name:"Lower B (Glute)",muscles:"Glutes, Hamstrings, Calves"},
+    {name:"Weak Point Day",muscles:"Delts, Back width, Arms"},
+    {name:"Rest",muscles:"Full rest"},
+  ],
+  "Figure Focused": [
+    {name:"Delts & Arms",muscles:"All 3 delt heads, Biceps, Triceps"},
+    {name:"Back & Rear Delts",muscles:"Lats, Rhomboids, Rear Delts"},
+    {name:"Legs (Quad/Calf)",muscles:"Quads, Calves, Core"},
+    {name:"Chest & Shoulders",muscles:"Upper Chest, Side/Front Delts"},
+    {name:"Glutes & Hams",muscles:"Glutes, Hamstrings"},
+    {name:"Weak Points",muscles:"Whatever needs extra work"},
+    {name:"Rest + Posing",muscles:"Quarter turns, stage walk"},
+  ]
+};
+
+let state = {
+  tab: "Check-In",
+  apiKey: localStorage.getItem("amanda-api-key") || "",
+  showKeyModal: false,
+  showProfileModal: false,
+  preview:null, imageBase64:null, imageMime:null,
+  stats: {weight:"",waist:"",hips:"",shoulders:"",energy:"7",sleep:"7",soreness:"3",notes:""},
+  isAnalyzing:false, analysis:null,
+  selectedSplit:"Figure Focused", expandedDay:null, generatingWorkout:false, workout:null,
+  goal:"build",
+  nutritionChat:[], generatingNutrition:false, chatInput:"",
+  logs: JSON.parse(localStorage.getItem("amanda-logs3")||"[]"),
+  profile: loadProfile(),
+};
+
+function setState(u) { Object.assign(state,u); render(); }
+
+// ==================== API ====================
+async function callClaude(messages, system) {
+  if (!state.apiKey) { setState({showKeyModal:true}); return null; }
+  const body = {model:"claude-sonnet-4-20250514", max_tokens:1000, messages};
+  if (system) body.system = system;
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-api-key":state.apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify(body)
+  });
+  if (!resp.ok) { if(resp.status===401) setState({showKeyModal:true}); return null; }
+  const data = await resp.json();
+  return data.content?.map(c=>c.text||"").join("\n") || null;
+}
+
+// ==================== HANDLERS ====================
+function handleFile(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const d=ev.target.result, b=d.split(",")[1], m=d.match(/data:(.*?);/);
+    setState({preview:d, imageBase64:b, imageMime:m?m[1]:"image/jpeg"});
+  };
+  reader.readAsDataURL(file);
+}
+function updateStat(k,v) { state.stats[k]=v; render(); }
+function updateProfile(k,v) { state.profile[k]=v; saveProfile(state.profile); }
+
+function buildTrendString() {
+  const logs = state.logs;
+  if (logs.length < 1) return "No previous check-ins yet — this is her first!";
+  const prev = logs[logs.length-1];
+  let lines = [`Previous check-in (${prev.date}):`];
+  if(prev.weight) lines.push(`  Weight: ${prev.weight} lbs`);
+  if(prev.waist) lines.push(`  Waist: ${prev.waist}"`);
+  if(prev.hips) lines.push(`  Hips: ${prev.hips}"`);
+  if(prev.shoulders) lines.push(`  Shoulders: ${prev.shoulders}"`);
+  lines.push(`  Energy:${prev.energy}/10 Sleep:${prev.sleep}/10 Soreness:${prev.soreness}/10`);
+  const recent = logs.filter(l=>l.weight).slice(-5);
+  if (recent.length>=3) {
+    const w = recent.map(l=>parseFloat(l.weight)).filter(n=>!isNaN(n));
+    if(w.length>=3) { const t=w[w.length-1]-w[0]; lines.push(`\nWeight trend (last ${w.length}): ${t>0?'+':''}${t.toFixed(1)} lbs`); }
+  }
+  return lines.join("\n");
+}
+
+async function handleAnalyze() {
+  setState({isAnalyzing:true, analysis:null});
+  const content=[], s=state.stats;
+  if(state.imageBase64) content.push({type:"image",source:{type:"base64",media_type:state.imageMime,data:state.imageBase64}});
+  
+  const profileCtx = buildProfileContext();
+  const trendStr = buildTrendString();
+  const promptText = `Amanda is submitting her weekly check-in.
+${profileCtx}
+
+${state.imageBase64 ? `PHOTO ANALYSIS — Evaluate for Figure division:
+- Overall symmetry and proportions (quarter turn readiness)
+- Shoulder cap development and V-taper progress
+- Back width (lat development)
+- Arm development relative to her tall frame
+- Quad sweep and hamstring/glute tie-in
+- Waist tightness and conditioning level
+- Specific areas needing the most work for Figure
+- Compare to any previous observations in your coach notes` : "No photo this week — coach based on stats and history."}
+
+CURRENT STATS:
+Weight: ${s.weight||"?"} lbs | Waist: ${s.waist||"?"}" | Hips: ${s.hips||"?"}" | Shoulders: ${s.shoulders||"?"}\"
+Energy: ${s.energy}/10 | Sleep: ${s.sleep}/10 | Soreness: ${s.soreness}/10
+Notes: ${s.notes||"none"}
+
+TREND DATA:
+${trendStr}
+
+Provide:
+1. Photo/physique assessment (if photo) with Figure-specific feedback
+2. Comparison to previous check-in — what's improving, what's stalling
+3. Top 3 priorities for this week
+4. Recovery note based on energy/sleep/soreness
+5. Motivational closer that references something personal from her profile or notes
+
+Max 350 words.`;
+  content.push({type:"text", text:promptText});
+
+  try {
+    const result = await callClaude([{role:"user",content}], FIGURE_SYSTEM);
+    if(result) {
+      const log = {
+        date:new Date().toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}),
+        weight:s.weight, waist:s.waist, hips:s.hips, shoulders:s.shoulders,
+        energy:s.energy, sleep:s.sleep, soreness:s.soreness, hasPhoto:!!state.imageBase64
+      };
+      if(state.preview) {
+        try {
+          const canvas=document.createElement("canvas"), img=new Image();
+          await new Promise((r,j)=>{img.onload=r;img.onerror=j;img.src=state.preview});
+          canvas.width=140;canvas.height=140;
+          const ctx=canvas.getContext("2d"), sz=Math.min(img.width,img.height), sx=(img.width-sz)/2, sy=(img.height-sz)/2;
+          ctx.drawImage(img,sx,sy,sz,sz,0,0,140,140);
+          log.thumbnail=canvas.toDataURL("image/jpeg",0.5);
+        } catch(e){}
+      }
+      state.logs.push(log);
+      try{localStorage.setItem("amanda-logs3",JSON.stringify(state.logs))}catch(e){
+        state.logs.forEach((l,i)=>{if(i<state.logs.length-5)delete l.thumbnail});
+        try{localStorage.setItem("amanda-logs3",JSON.stringify(state.logs))}catch(e2){}
+      }
+      setState({analysis:result, isAnalyzing:false});
+      // Generate coach notes in background
+      generateCoachNotes(result, `Check-in: Weight ${s.weight}, Waist ${s.waist}, Energy ${s.energy}/10, Sleep ${s.sleep}/10, Soreness ${s.soreness}/10, Notes: ${s.notes}`);
+    } else setState({isAnalyzing:false});
+  } catch(err) { setState({analysis:"Couldn't connect — try again.", isAnalyzing:false}); }
+}
+
+async function generateWorkout(day) {
+  setState({generatingWorkout:true, workout:null});
+  const profileCtx = buildProfileContext();
+  try {
+    const result = await callClaude([{role:"user", content:`Generate a detailed ${day.name} workout targeting ${day.muscles}.
+${profileCtx}
+
+6-8 exercises with sets x reps, rest periods, and form cues. Include warm-up.
+For Figure: emphasize mind-muscle connection, tempo where it matters.
+If coach notes mention any weak points or preferences, incorporate those.
+End with a posing practice suggestion for today's muscles.
+Reference her by name and make it feel personal.`}], FIGURE_SYSTEM);
+    setState({workout:result, generatingWorkout:false});
+  } catch(err) { setState({workout:"Couldn't connect — try again.", generatingWorkout:false}); }
+}
+
+async function sendNutritionChat(msg) {
+  if(!msg && !state.chatInput.trim()) return;
+  const userMsg = msg||state.chatInput.trim();
+  state.nutritionChat.push({role:"user",content:userMsg});
+  state.chatInput="";
+  setState({generatingNutrition:true});
+
+  const goalText = state.goal==="build"?"lean muscle building for Figure (slight surplus)":state.goal==="cut"?"contest prep cut for Figure (moderate deficit)":"offseason maintenance / recomp for Figure";
+  const profileCtx = buildProfileContext();
+  const sysMsg = FIGURE_SYSTEM + profileCtx + `\n\nYou are also her nutrition coach. Current goal: ${goalText}. Use her food preferences and dislikes from her profile. Be conversational. Give specific portions. Keep responses under 200 words unless generating a full plan.`;
+
+  const messages = state.nutritionChat.map(m=>({role:m.role,content:m.content}));
+  try {
+    const result = await callClaude(messages, sysMsg);
+    if(result) {
+      state.nutritionChat.push({role:"assistant",content:result});
+      setState({generatingNutrition:false});
+      generateCoachNotes(result, `Nutrition chat about ${goalText}`);
+    } else setState({generatingNutrition:false});
+  } catch(err) {
+    state.nutritionChat.push({role:"assistant",content:"Couldn't connect — try again."});
+    setState({generatingNutrition:false});
+  }
+}
+
+function saveApiKey() {
+  const v=document.getElementById("api-key-input")?.value?.trim();
+  if(v){localStorage.setItem("amanda-api-key",v);setState({apiKey:v,showKeyModal:false})}
+}
+
+function escapeHtml(s){return s?s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>"):""}
+
+// ==================== RENDER ====================
+function render() {
+  const app=document.getElementById("app");
+  let h="";
+
+  // API Key Modal
+  if(state.showKeyModal) {
+    h+=`<div class="modal-overlay" onclick="if(event.target===this)setState({showKeyModal:false})">
+    <div class="modal"><h2>🔑 Setup</h2><p>Paste your Anthropic API key. Stays on this device only.</p>
+    <input type="password" id="api-key-input" placeholder="sk-ant-..." value="${state.apiKey}">
+    <button class="btn-primary" onclick="saveApiKey()">Save & Go</button></div></div>`;
+  }
+
+  // Profile Modal
+  if(state.showProfileModal) {
+    const p=state.profile;
+    h+=`<div class="modal-overlay" onclick="if(event.target===this)setState({showProfileModal:false})">
+    <div class="modal">
+      <h2>👤 Your Profile</h2>
+      <p>The more your coach knows, the better the advice gets over time.</p>
+      ${[
+        ["name","Your Name","text"],
+        ["age","Age","text"],
+        ["height","Height (e.g. 5'9\")","text"],
+        ["workSchedule","Work Schedule","text"],
+      ].map(([k,l,t])=>`<div class="profile-field"><label class="field-label">${l}</label>
+        <input type="${t}" value="${escapeAttr(p[k])}" onchange="updateProfile('${k}',this.value)"></div>`).join("")}
+      ${[
+        ["injuries","Injuries / Limitations","Any current or past injuries to work around?"],
+        ["foodLikes","Foods You Love","What meals/ingredients do you enjoy?"],
+        ["foodDislikes","Foods to Avoid","Allergies, dislikes, dietary restrictions?"],
+        ["weakPoints","Weak Points (your assessment)","Which muscle groups feel behind?"],
+        ["strongPoints","Strong Points","What do you feel is developing well?"],
+        ["whyCompete","Why You're Doing This","What's driving you to compete?"],
+      ].map(([k,l,ph])=>`<div class="profile-field"><label class="field-label">${l}</label>
+        <textarea rows="2" placeholder="${ph}" onchange="updateProfile('${k}',this.value)">${escapeHtml(p[k]).replace(/<br>/g,"\n")}</textarea></div>`).join("")}
+      <button class="btn-primary" onclick="setState({showProfileModal:false})">Save Profile</button>
+    </div></div>`;
+  }
+
+  // Header
+  h+=`<div class="header"><div class="header-label">${state.profile.name}'s</div><h1>Body Coach</h1>
+    <div class="header-division">✦ ${state.profile.division} Division ✦</div>
+    <p class="header-sub">Built with love by Anton</p></div>`;
+
+  // Tabs
+  h+=`<div class="tabs">`;
+  ["Check-In","Training","Nutrition","Progress","Profile"].forEach(t=>{
+    h+=`<button class="tab ${state.tab===t?'active':''}" onclick="setState({tab:'${t}'})">${t}</button>`;
+  });
+  h+=`</div>`;
+
+  if(state.tab==="Check-In") h+=renderCheckIn();
+  else if(state.tab==="Training") h+=renderTraining();
+  else if(state.tab==="Nutrition") h+=renderNutrition();
+  else if(state.tab==="Progress") h+=renderProgress();
+  else if(state.tab==="Profile") h+=renderProfile();
+
+  h+=`<div style="text-align:center;margin-top:32px"><button class="btn-ghost" onclick="setState({showKeyModal:true})">⚙️ API Key</button></div>`;
+  app.innerHTML=h;
+
+  const chatEl=document.getElementById("nutrition-chat");
+  if(chatEl) chatEl.scrollTop=chatEl.scrollHeight;
+}
+
+function renderCheckIn() {
+  const s=state.stats;
+  let h=`<div class="figure-tip"><strong>💡 Figure Tip:</strong> Practice quarter turns — front, right, back, left. That's exactly what judges see.</div>`;
+  h+=`<div class="upload-area" onclick="document.getElementById('file-input').click()">
+    <input type="file" id="file-input" accept="image/*" capture="environment" onchange="handleFile(event)" style="display:none">
+    ${state.preview?`<img src="${state.preview}">`:`<div class="upload-icon">📸</div><p class="upload-label">Tap to upload check-in photo</p><p class="upload-hint">Front, side, or back quarter turn</p>`}
+  </div>`;
+  h+=`<div class="grid-2">${[["weight","Weight (lbs)"],["waist","Waist (in)"],["hips","Hips (in)"],["shoulders","Shoulders (in)"]].map(([k,l])=>
+    `<div><label class="field-label">${l}</label><input type="number" value="${s[k]}" onchange="updateStat('${k}',this.value)" inputmode="decimal" step="0.1"></div>`).join("")}</div>`;
+  h+=`<div class="grid-3" style="margin-bottom:16px">${[["energy","⚡ Energy"],["sleep","😴 Sleep"],["soreness","🔥 Soreness"]].map(([k,l])=>
+    `<div><label class="field-label">${l}</label><input type="range" min="1" max="10" value="${s[k]}" oninput="updateStat('${k}',this.value);this.nextElementSibling.textContent=this.value+'/10'"><div class="slider-value">${s[k]}/10</div></div>`).join("")}</div>`;
+  h+=`<textarea rows="3" placeholder="Notes — training, work, life, anything on your mind..." onchange="updateStat('notes',this.value)" style="margin-bottom:16px">${s.notes}</textarea>`;
+  h+=`<button class="btn-primary" onclick="handleAnalyze()" ${state.isAnalyzing?'disabled':''}>${state.isAnalyzing?'✨ Your coach is reviewing...':'🔍 Analyze & Get Coaching'}</button>`;
+  if(state.analysis) h+=`<div class="result-card"><h3>Your Coach Says:</h3><div class="result-text">${escapeHtml(state.analysis)}</div></div>`;
+  return h;
+}
+
+function renderTraining() {
+  let h=`<div class="figure-tip"><strong>💡 Figure Focus:</strong> Delts (all 3 heads), back width, and glute/ham tie-ins win Figure shows.</div>`;
+  h+=`<div class="pills">${Object.keys(SPLITS).map(n=>`<div class="pill ${state.selectedSplit===n?'active':''}" onclick="setState({selectedSplit:'${n}',expandedDay:null,workout:null})">${n}</div>`).join("")}</div>`;
+  SPLITS[state.selectedSplit].forEach((day,i)=>{
+    const exp=state.expandedDay===i, rest=day.name.includes("Rest");
+    h+=`<div class="day-row ${exp?'expanded':''}" onclick="setState({expandedDay:${exp?'null':i},workout:null})">
+      <div><span class="day-num">Day ${i+1}</span><span class="day-name ${rest?'rest':''}">${day.name}</span></div>
+      <span class="day-muscles">${day.muscles}</span></div>`;
+    if(exp&&!rest){
+      h+=`<div class="day-detail">`;
+      if(!state.workout) h+=`<button class="btn-secondary" onclick="event.stopPropagation();generateWorkout(SPLITS['${state.selectedSplit}'][${i}])" ${state.generatingWorkout?'disabled':''}>${state.generatingWorkout?'✨ Generating...':'⚡ Generate Workout'}</button>`;
+      else h+=`<div class="result-text">${escapeHtml(state.workout)}</div>`;
+      h+=`</div>`;
+    }
+  });
+  return h;
+}
+
+function renderNutrition() {
+  let h=`<label class="field-label" style="margin-bottom:8px;display:block">Current Phase</label>`;
+  h+=`<div class="goal-grid">${[["build","🏗️","Off-Season"],["recomp","🔄","Maintain"],["cut","✂️","Prep"]].map(([k,e,l])=>
+    `<div class="goal-btn ${state.goal===k?'active':''}" onclick="state.goal='${k}';state.nutritionChat=[];render()"><span class="goal-emoji">${e}</span><span class="goal-label">${l}</span></div>`).join("")}</div>`;
+
+  if(state.nutritionChat.length===0){
+    h+=`<button class="btn-primary" onclick="sendNutritionChat('Generate a full day meal plan for me with my macro targets, 5 meals with exact portions, and pre/post workout timing. Use my food preferences from my profile.')">🍽️ Generate Meal Plan</button>`;
+    h+=`<div class="quick-edits" style="margin-top:12px;justify-content:center">
+      <div class="quick-edit" onclick="sendNutritionChat('What should my daily macros be right now?')">📊 My macros?</div>
+      <div class="quick-edit" onclick="sendNutritionChat('Sunday meal prep guide for my work week')">📦 Meal prep</div>
+      <div class="quick-edit" onclick="sendNutritionChat('Pre and post workout nutrition for today')">⏰ Pre/post</div>
+      <div class="quick-edit" onclick="sendNutritionChat('Quick high-protein snacks I can bring to work')">🏥 Work snacks</div>
+    </div>`;
+  } else {
+    h+=`<div class="chat-container" id="nutrition-chat" style="max-height:50vh;overflow-y:auto;padding-right:4px">`;
+    state.nutritionChat.forEach(m=>{h+=`<div class="chat-msg ${m.role==='user'?'user':'assistant'}">${escapeHtml(m.content)}</div>`;});
+    if(state.generatingNutrition) h+=`<div class="chat-msg assistant" style="animation:pulse 1.5s infinite">✨ Thinking...</div>`;
+    h+=`</div>`;
+    h+=`<div class="quick-edits">
+      <div class="quick-edit" onclick="sendNutritionChat('Swap the protein source')">🔄 Swap protein</div>
+      <div class="quick-edit" onclick="sendNutritionChat('Make it faster to prep')">⚡ Faster</div>
+      <div class="quick-edit" onclick="sendNutritionChat('12-hour shift day — adjust timing')">🏥 Shift day</div>
+      <div class="quick-edit" onclick="sendNutritionChat('Different snack option')">🍎 New snack</div>
+      <div class="quick-edit" onclick="sendNutritionChat('I\\'m craving something sweet — healthy option?')">🍫 Sweet tooth</div>
+    </div>`;
+    h+=`<div class="chat-input-row"><input type="text" id="chat-msg-input" placeholder="Ask anything..." value="${escapeAttr(state.chatInput)}" onkeydown="if(event.key==='Enter')sendNutritionChat()" oninput="state.chatInput=this.value">
+      <button class="btn-secondary" onclick="sendNutritionChat()" ${state.generatingNutrition?'disabled':''}>Send</button></div>`;
+    h+=`<button class="btn-ghost" style="margin-top:8px" onclick="state.nutritionChat=[];render()">🗑️ Start fresh</button>`;
+  }
+  return h;
+}
+
+function renderProgress() {
+  if(state.logs.length===0) return `<div class="empty-state"><div class="empty-icon">📊</div><p class="empty-text">No check-ins yet. Your journey starts with the first one.</p></div>`;
+  let h=`<h3 style="font-family:'Playfair Display',serif;font-size:20px;color:var(--pink);margin-bottom:4px">Progress Timeline</h3>`;
+  h+=`<p style="font-size:12px;color:var(--muted);margin-bottom:16px">${state.logs.length} check-in${state.logs.length===1?'':'s'}</p>`;
+  const rev=[...state.logs].reverse();
+  rev.forEach((log,i)=>{
+    const prev=i<rev.length-1?rev[i+1]:null;
+    h+=`<div class="progress-entry">`;
+    if(log.thumbnail) h+=`<img class="progress-photo-img" src="${log.thumbnail}">`;
+    else if(log.hasPhoto) h+=`<div class="progress-photo-placeholder">📸</div>`;
+    h+=`<div style="flex:1"><div class="progress-date">${log.date}</div><div class="progress-stats">`;
+    if(log.weight) h+=`<span class="progress-stat">⚖️ ${log.weight}${prev&&prev.weight?trendBadge(log.weight,prev.weight):''}</span>`;
+    if(log.waist) h+=`<span class="progress-stat">📏 ${log.waist}"${prev&&prev.waist?trendBadge(log.waist,prev.waist):''}</span>`;
+    if(log.shoulders) h+=`<span class="progress-stat">💪 ${log.shoulders}"${prev&&prev.shoulders?trendBadgeUp(log.shoulders,prev.shoulders):''}</span>`;
+    h+=`</div><div class="progress-moods"><span class="progress-mood">⚡${log.energy}</span><span class="progress-mood">😴${log.sleep}</span><span class="progress-mood">🔥${log.soreness}</span></div></div></div>`;
+  });
+  h+=`<button class="btn-ghost" style="margin-top:16px" onclick="if(confirm('Clear all progress?')){state.logs=[];localStorage.removeItem('amanda-logs3');render()}">🗑️ Clear History</button>`;
+  return h;
+}
+
+function renderProfile() {
+  const p=state.profile;
+  const notes=loadCoachNotes();
+  let h=`<div class="profile-section"><h3>👤 About You</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">The more your coach knows, the better the advice gets. This info is stored on your phone only.</p>`;
+  h+=[["name","Name"],["age","Age"],["height","Height"],["workSchedule","Work Schedule"]].map(([k,l])=>
+    `<div class="profile-field"><label class="field-label">${l}</label><input type="text" value="${escapeAttr(p[k])}" onchange="updateProfile('${k}',this.value)"></div>`).join("");
+  h+=[
+    ["injuries","Injuries / Limitations","Anything to work around?"],
+    ["foodLikes","Foods You Love","Meals and ingredients you enjoy"],
+    ["foodDislikes","Foods to Avoid / Allergies","What should your coach never suggest?"],
+    ["weakPoints","Weak Points","Which muscles feel behind?"],
+    ["strongPoints","Strong Points","What's developing well?"],
+    ["whyCompete","Your Why","What's driving you to step on stage?"],
+  ].map(([k,l,ph])=>
+    `<div class="profile-field"><label class="field-label">${l}</label><textarea rows="2" placeholder="${ph}" onchange="updateProfile('${k}',this.value)">${p[k]||""}</textarea></div>`).join("");
+  h+=`</div>`;
+
+  // Coach Notes Display
+  h+=`<div class="coach-notes"><h4>🧠 What Your Coach Has Learned</h4>`;
+  if(notes.length===0){
+    h+=`<p style="font-size:13px;color:var(--muted)">Your coach hasn't learned anything yet. After your first check-in and nutrition chats, notes will start appearing here automatically.</p>`;
+  } else {
+    notes.slice().reverse().forEach(n=>{
+      h+=`<div class="coach-note-item"><span class="coach-note-date">${n.date}</span> — ${escapeHtml(n.note)}</div>`;
+    });
+    h+=`<button class="btn-ghost" style="margin-top:12px" onclick="if(confirm('Clear all coach notes? Your coach will start learning from scratch.')){localStorage.removeItem('amanda-coach-notes');render()}">🗑️ Reset Coach Memory</button>`;
+  }
+  h+=`</div>`;
+  return h;
+}
+
+// Trend badge: for weight/waist, DOWN is good
+function trendBadge(curr,prev) {
+  if(!curr||!prev) return "";
+  const d=parseFloat(curr)-parseFloat(prev);
+  if(Math.abs(d)<0.1) return `<span class="trend-badge trend-same">→</span>`;
+  return `<span class="trend-badge ${d<0?'trend-down':'trend-up'}">${d<0?'↓':'↑'}${Math.abs(d).toFixed(1)}</span>`;
+}
+// For shoulders, UP is good
+function trendBadgeUp(curr,prev) {
+  if(!curr||!prev) return "";
+  const d=parseFloat(curr)-parseFloat(prev);
+  if(Math.abs(d)<0.1) return `<span class="trend-badge trend-same">→</span>`;
+  return `<span class="trend-badge ${d>0?'trend-down':'trend-up'}">${d>0?'↑':'↓'}${Math.abs(d).toFixed(1)}</span>`;
+}
+function escapeAttr(s){return s?s.replace(/"/g,"&quot;").replace(/'/g,"&#39;"):""}
+function escapeHtml(s){return s?s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>"):""}
+
+// ==================== INIT ====================
+if(!state.apiKey) state.showKeyModal=true;
+render();
+</script>
+</body>
+</html>
